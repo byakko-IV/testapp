@@ -1,8 +1,11 @@
 # config valid only for current version of Capistrano
 lock '3.6.1'
 
-set :application, 'my_app_name'
-set :repo_url, 'git@example.com:me/my_repo.git'
+set :aplication, 'testapp'
+set :repo_url, 'https://github.com/byakko-IV/testapp.git'
+set :deploy_to, '/opt/www/testapp'
+set :user, 'deploy'
+set :linked_dirs, '%w{log tmp/pids tmp/cache tmp/sockets}'
 
 # Default branch is :master
 # ask :branch, `git rev-parse --abbrev-ref HEAD`.chomp
@@ -34,3 +37,21 @@ set :repo_url, 'git@example.com:me/my_repo.git'
 
 # Default value for keep_releases is 5
 # set :keep_releases, 5
+
+namespace :deploy do
+	%w[start stop restart].each do |command|
+		desc 'Manage Unicorn'
+		task command do
+			on roles(:app), in: :sequence, wait: 1 do
+				execute "/etc/init.d/unicorn_#{fetch(:aplication)} #{command}"
+			end
+		end
+	end
+
+	after :publishing, :restart
+
+	after :restart, :clear_cache do
+		on roles(:web), in: :groups, limit: 3, wait: 10 do
+		end
+	end
+end
